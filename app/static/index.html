@@ -1,0 +1,183 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>PhishGuard: check a message before you click</title>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='M12 3l8 3v6c0 4.5-3.2 7.8-8 9-4.8-1.2-8-4.5-8-9V6z' fill='%231b7a5f'/%3E%3C/svg%3E">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:wght@600;800&family=Instrument+Sans:wght@400;500;600&display=swap">
+<style>
+:root{--bg:#f4f6f2;--card:#fff;--ink:#14202b;--mute:#5b6773;--line:#d9dfd6;--red:#c8312c;--amber:#b87b00;--green:#1b7a5f;--hl:#ffe3a3;--hlurl:#ffc9c6;--band:#e9eee6}
+@media (prefers-color-scheme:dark){:root{--bg:#10171d;--card:#18222b;--ink:#e8eef2;--mute:#97a4af;--line:#2b3946;--red:#ff6b64;--amber:#f0b429;--green:#4fd1a5;--hl:#5a4710;--hlurl:#6b2623;--band:#141d25}}
+*,*::before,*::after{box-sizing:border-box}
+html{scroll-padding-top:76px;scroll-behavior:smooth}
+body{margin:0;background:var(--bg);color:var(--ink);font:400 16px/1.6 "Instrument Sans",system-ui,sans-serif}
+a{color:inherit}
+.wrap{max-width:1040px;margin:0 auto;padding:0 18px}
+header{position:sticky;top:0;z-index:10;background:var(--bg);border-bottom:1px solid var(--line);padding-top:env(safe-area-inset-top,0px)}
+.bar{display:flex;align-items:center;gap:18px;height:62px}
+.brand{display:flex;align-items:center;gap:9px;font:800 1.25rem "Bricolage Grotesque",sans-serif;text-decoration:none;letter-spacing:-.01em}
+nav{display:flex;gap:20px;margin-left:auto}
+nav a{text-decoration:none;color:var(--mute);font-weight:500;font-size:.95rem}nav a:hover{color:var(--ink)}
+.cta{font:600 .92rem "Instrument Sans",sans-serif;background:var(--ink);color:var(--bg);border-radius:6px;padding:8px 14px;text-decoration:none;white-space:nowrap}
+@media(max-width:720px){nav{display:none}.cta{margin-left:auto}}
+.hero{padding:56px 0 36px;display:grid;grid-template-columns:1.3fr 1fr;gap:32px;align-items:center}
+@media(max-width:820px){.hero{grid-template-columns:1fr;padding-top:36px}}
+h1{font:800 clamp(2.3rem,6vw,3.8rem)/1.02 "Bricolage Grotesque",sans-serif;margin:0 0 14px;letter-spacing:-.025em}
+.lead{color:var(--mute);font-size:1.08rem;max-width:52ch;margin:0 0 22px}
+.facts{border:1px solid var(--line);border-radius:10px;background:var(--card)}
+.facts div{padding:14px 16px;border-top:1px solid var(--line)}.facts div:first-child{border-top:0}
+.facts b{display:block;font:600 1.02rem "Bricolage Grotesque",sans-serif}
+.facts span{color:var(--mute);font-size:.92rem}
+h2.sec{font:800 clamp(1.5rem,3.5vw,2.1rem)/1.1 "Bricolage Grotesque",sans-serif;margin:0 0 8px;letter-spacing:-.02em}
+section.blk{padding:44px 0}
+section.band{background:var(--band);border-block:1px solid var(--line)}
+.sub{color:var(--mute);margin:0 0 22px;max-width:60ch}
+.grid{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+@media(max-width:760px){.grid{grid-template-columns:1fr}}
+.panel{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:16px;min-width:0}
+h2{font:600 1.05rem "Bricolage Grotesque",sans-serif;margin:0 0 10px}
+textarea{width:100%;min-height:170px;resize:vertical;font:inherit;color:inherit;background:transparent;border:1px solid var(--line);border-radius:8px;padding:10px}
+textarea:focus-visible,button:focus-visible,a:focus-visible,summary:focus-visible{outline:2px solid var(--ink);outline-offset:2px}
+.row{display:flex;flex-wrap:wrap;gap:8px;margin-top:10px}
+button{font:500 .92rem "Instrument Sans",sans-serif;color:var(--ink);background:transparent;border:1px solid var(--line);border-radius:6px;padding:7px 12px;cursor:pointer}
+button:hover{border-color:var(--ink)}button:disabled{opacity:.5;cursor:default}
+button.go{background:var(--ink);color:var(--bg);border-color:var(--ink);font-weight:600}
+.score{display:flex;align-items:baseline;gap:12px}
+.num{font:800 4.2rem/1 "Bricolage Grotesque",sans-serif;font-variant-numeric:tabular-nums}
+.verdict{font:600 1.2rem "Bricolage Grotesque",sans-serif}
+.bar2{height:12px;border-radius:6px;background:linear-gradient(90deg,var(--green) 0 30%,var(--amber) 30% 60%,var(--red) 60% 100%);position:relative;margin:12px 0 4px;opacity:.9}
+.pin{position:absolute;top:-5px;width:4px;height:22px;background:var(--ink);border-radius:2px;left:0;transition:left .45s ease}
+.scale{display:flex;justify-content:space-between;font-size:.8rem;color:var(--mute)}
+ul{margin:0;padding-left:1.1em}li{margin:4px 0}
+.msg{white-space:pre-wrap;word-break:break-word;border:1px solid var(--line);border-radius:8px;padding:10px;min-height:60px}
+mark{background:var(--hl);color:inherit;border-radius:3px;padding:0 2px}mark.u{background:var(--hlurl)}
+.url{border-top:1px solid var(--line);padding:8px 0;word-break:break-all}
+.toast{min-height:1.4em;font-size:.9rem;color:var(--green);margin-top:8px}
+.steps{display:grid;grid-template-columns:repeat(3,1fr);gap:0;border:1px solid var(--line);border-radius:10px;background:var(--card)}
+.steps div{padding:18px;border-left:1px solid var(--line)}.steps div:first-child{border-left:0}
+.steps i{font:800 1.8rem/1 "Bricolage Grotesque",sans-serif;font-style:normal;color:var(--mute)}
+.steps h3,.defs h3{font:600 1.05rem "Bricolage Grotesque",sans-serif;margin:8px 0 4px}
+.steps p,.defs p{margin:0;color:var(--mute);font-size:.95rem}
+@media(max-width:760px){.steps{grid-template-columns:1fr}.steps div{border-left:0;border-top:1px solid var(--line)}.steps div:first-child{border-top:0}}
+.defs{display:grid;grid-template-columns:1fr 1fr;gap:0 32px}
+.defs div{border-top:1px solid var(--line);padding:16px 0}
+@media(max-width:760px){.defs{grid-template-columns:1fr}}
+.tips li{margin:10px 0}
+details{border-top:1px solid var(--line);padding:14px 0}details:last-of-type{border-bottom:1px solid var(--line)}
+summary{font:600 1.02rem "Bricolage Grotesque",sans-serif;cursor:pointer}
+details p{margin:8px 0 0;color:var(--mute);max-width:70ch}
+footer{border-top:1px solid var(--line);padding:30px 0 calc(30px + env(safe-area-inset-bottom,0px));color:var(--mute);font-size:.92rem}
+.foot{display:flex;flex-wrap:wrap;gap:20px 40px;justify-content:space-between}
+.foot nav{margin:0;gap:16px;flex-wrap:wrap}
+@media(prefers-reduced-motion:reduce){.pin{transition:none}html{scroll-behavior:auto}}
+</style>
+</head>
+<body>
+<header><div class="wrap bar">
+ <a class="brand" href="#top"><svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round" aria-hidden="true"><path d="M12 3l8 3v6c0 4.5-3.2 7.8-8 9-4.8-1.2-8-4.5-8-9V6z"/><path d="M8.5 12l2.5 2.5 4.5-5" stroke-linecap="round"/></svg>PhishGuard</a>
+ <nav aria-label="Main"><a href="#tool">Checker</a><a href="#how">How it works</a><a href="#checks">What it checks</a><a href="#tips">Stay safe</a><a href="#faq">FAQ</a></nav>
+ <a class="cta" href="#tool">Check a message</a>
+</div></header>
+<main id="top">
+<div class="wrap hero">
+ <div>
+  <h1>Check a message before you click it.</h1>
+  <p class="lead">Paste an SMS, email, or link. PhishGuard gives it a risk score, shows the exact words and links that raised it, and explains why in plain language.</p>
+  <a class="cta" href="#tool">Try the checker</a>
+ </div>
+ <div class="facts">
+  <div><b>Three checks in one</b><span>A text model, a link model, and rules for pressure tactics.</span></div>
+  <div><b>Links are never opened</b><span>Every link is analysed as text, so checking is safe.</span></div>
+  <div><b>Every verdict explained</b><span>You see the reasons, not just a number.</span></div>
+ </div>
+</div>
+<section class="blk band" id="tool"><div class="wrap">
+ <h2 class="sec">Checker</h2>
+ <p class="sub">Paste a message, or try one of the samples.</p>
+ <div class="grid">
+  <section class="panel">
+   <h2>Message to check</h2>
+   <textarea id="in" aria-label="Message to check" placeholder="Paste an SMS, email text, or link here"></textarea>
+   <div class="row">
+    <button class="go" id="check">Check message</button>
+    <button data-s="0">Fake bank KYC</button>
+    <button data-s="1">Prize scam</button>
+    <button data-s="2">Normal message</button>
+   </div>
+  </section>
+  <section class="panel" aria-live="polite">
+   <h2>Result</h2>
+   <div class="score"><span class="num" id="num">--</span><span class="verdict" id="ver">Waiting for a message</span></div>
+   <div class="bar2"><div class="pin" id="pin"></div></div>
+   <div class="scale"><span>Safe</span><span>Suspicious</span><span>Phishing</span></div>
+   <div class="row"><button id="wrong" disabled>Mark as wrong</button></div>
+   <div class="toast" id="toast"></div>
+  </section>
+  <section class="panel"><h2>What triggered it</h2><div class="msg" id="hl">Highlighted words and links will appear here.</div></section>
+  <section class="panel"><h2>Reasons</h2><ul id="why"><li>No result yet.</li></ul><h2 style="margin-top:14px">Links found</h2><div id="urls">None yet.</div></section>
+ </div>
+</div></section>
+<section class="blk" id="how"><div class="wrap">
+ <h2 class="sec">How it works</h2>
+ <p class="sub">From pasted text to a verdict in three steps.</p>
+ <div class="steps">
+  <div><i>1</i><h3>Paste</h3><p>Add the message or link you received. Nothing is opened or clicked.</p></div>
+  <div><i>2</i><h3>Analyse</h3><p>The wording, each link, and known pressure tactics are scored separately, then combined.</p></div>
+  <div><i>3</i><h3>Review</h3><p>You get a 0 to 100 score, a verdict, and the reasons behind it.</p></div>
+ </div>
+</div></section>
+<section class="blk band" id="checks"><div class="wrap">
+ <h2 class="sec">What it checks</h2>
+ <p class="sub">The signals behind every score.</p>
+ <div class="defs">
+  <div><h3>Message wording</h3><p>A text model trained to recognise phrasing typical of phishing and scam messages.</p></div>
+  <div><h3>Link structure</h3><p>Length, hyphens, subdomains, IP addresses, HTTPS, and unusual domain endings.</p></div>
+  <div><h3>Lookalike domains</h3><p>Links that mention a known brand but belong to a different domain, or swap a digit for a letter.</p></div>
+  <div><h3>Pressure tactics</h3><p>Urgent deadlines, account-block threats, prize bait, and requests for OTPs or passwords.</p></div>
+ </div>
+</div></section>
+<section class="blk" id="tips"><div class="wrap">
+ <h2 class="sec">Stay safe</h2>
+ <p class="sub">Habits that protect you even without a tool.</p>
+ <ul class="tips">
+  <li>Banks never ask for your OTP, PIN, or password by message or call.</li>
+  <li>Type the website address yourself instead of tapping a link in a message.</li>
+  <li>Be wary of deadlines like "within 24 hours" or "blocked today".</li>
+  <li>Check the full domain, not just the brand name inside it.</li>
+  <li>If unsure, contact the company using the number on its official website.</li>
+ </ul>
+</div></section>
+<section class="blk band" id="faq"><div class="wrap">
+ <h2 class="sec">FAQ</h2>
+ <p class="sub"></p>
+ <details><summary>Does PhishGuard open the links I paste?</summary><p>No. Links are analysed as text only, so nothing is visited.</p></details>
+ <details><summary>Is my message stored?</summary><p>It is processed to produce the result. A message is saved only when you click "Mark as wrong", and then it is written to a feedback file for retraining.</p></details>
+ <details><summary>How accurate is it?</summary><p>Use it as a second opinion, not a guarantee. Some real messages can be flagged by mistake and some scams can slip through, which is why every result shows its reasons.</p></details>
+ <details><summary>What should I do if the result is wrong?</summary><p>Click "Mark as wrong". The correction is saved so the models can be improved.</p></details>
+</div></section>
+</main>
+<footer><div class="wrap foot">
+ <div><b>PhishGuard</b><br>An AI and ML course project. Not a substitute for your bank or your own judgement.<br>&copy; 2026</div>
+ <nav aria-label="Footer"><a href="#tool">Checker</a><a href="#how">How it works</a><a href="#checks">What it checks</a><a href="#tips">Stay safe</a><a href="#faq">FAQ</a></nav>
+</div></footer>
+<script>
+const $=id=>document.getElementById(id);
+const esc=s=>s.replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+const SAMPLES=["Dear customer, your SBI account will be BLOCKED today. Complete KYC immediately to avoid penalty: http://sbi-kyc-update.verify-login.xyz/secure and share the OTP you receive.","Congratulations! You are the winner of a Rs 50,000 cashback reward. Claim now before it expires: https://bit.ly/3xClaimNow","Hi, the project meeting moved to 4 pm tomorrow. Notes are here: https://docs.google.com/document/d/abc123. See you there."];
+let last=null,lastText="";
+function hl(text,d){const urls=new Set(d.flagged_urls.map(u=>u.url));const terms=[...urls,...d.highlighted_words].filter(Boolean).sort((a,b)=>b.length-a.length);if(!terms.length)return esc(text);const re=new RegExp("("+terms.map(t=>t.replace(/[.*+?^${}()|[\]\\]/g,"\\$&")).join("|")+")","gi");return text.split(re).map((p,i)=>i%2?`<mark${urls.has(p)?' class="u"':""}>${esc(p)}</mark>`:esc(p)).join("")}
+async function run(){const text=$("in").value.trim();if(!text)return;
+ let d;try{const r=await fetch("/check",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({text})});if(!r.ok)throw new Error((await r.json()).detail||r.status);d=await r.json()}catch(e){$("toast").textContent="Could not check: "+e.message;return}
+ last=d;lastText=text;const c=d.verdict=="safe"?"var(--green)":d.verdict=="suspicious"?"var(--amber)":"var(--red)";
+ $("num").textContent=d.score;$("num").style.color=c;$("ver").textContent={safe:"Looks safe",suspicious:"Suspicious",phishing:"Likely phishing"}[d.verdict];$("ver").style.color=c;
+ $("pin").style.left="calc("+d.score+"% - 2px)";$("hl").innerHTML=hl(text,d);
+ $("why").innerHTML=(d.reasons.length?d.reasons:["No warning signs found in the wording"]).map(x=>"<li>"+esc(x)+"</li>").join("");
+ $("urls").innerHTML=d.flagged_urls.length?d.flagged_urls.map(x=>'<div class="url"><b>'+x.score+"/100</b> "+esc(x.url)+"<br><small>"+(x.reasons.length?esc(x.reasons.join("; ")):"No warning signs in the link")+"</small></div>").join(""):"No links in this message.";
+ $("wrong").disabled=false;$("toast").textContent=""}
+$("check").onclick=run;
+document.querySelectorAll("[data-s]").forEach(b=>b.onclick=()=>{$("in").value=SAMPLES[b.dataset.s];run()});
+$("wrong").onclick=async()=>{await fetch("/feedback",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({text:lastText,predicted:last.verdict,correct:last.verdict=="safe"?"phishing":"safe"})});$("toast").textContent="Thanks. Saved to data/feedback.csv.";$("wrong").disabled=true};
+</script>
+</body>
+</html>
